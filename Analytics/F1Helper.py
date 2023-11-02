@@ -97,4 +97,4 @@ class Grapher:
         dif.grid(True, which='minor')
 
         fig.suptitle(str(session) + "\n" + drivers[0] + " " + self.__laptime_to_string(laps[0]['LapTime'].total_seconds()) + " vs " + drivers[1] + " " + self.__laptime_to_string(laps[1]['LapTime'].total_seconds()), fontsize=35)
-        fig.savefig(drivers[0] + "_" + drivers[1] + ".png")
+        fig.savefig(session.event['EventName'] + "/" + drivers[0] + "_" + drivers[1] + ".png")
