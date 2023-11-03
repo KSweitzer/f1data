@@ -14,7 +14,7 @@ class Grapher:
         s = round(seconds % 60, 3)
         return str(m) + ":" + str(s)
     
-    def telemetry_graph(self, session, drivers):
+    def telemetry_graph(self, session, drivers, save=True):
         laps = []
         tels = []
         circuit_info = session.get_circuit_info()
@@ -97,4 +97,6 @@ class Grapher:
         dif.grid(True, which='minor')
 
         fig.suptitle(str(session) + "\n" + drivers[0] + " " + self.__laptime_to_string(laps[0]['LapTime'].total_seconds()) + " vs " + drivers[1] + " " + self.__laptime_to_string(laps[1]['LapTime'].total_seconds()), fontsize=35)
-        fig.savefig(session.event['EventName'] + "/" + drivers[0] + "_" + drivers[1] + ".png")
+        
+        if save:
+            fig.savefig(session.event['EventName'] + "/" + drivers[0] + "_" + drivers[1] + "_" + session.name + ".png")
