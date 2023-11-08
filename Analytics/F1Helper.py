@@ -1,7 +1,11 @@
 from matplotlib import pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
+import fastf1 as f1
 import fastf1.plotting as f1plt
+from fastf1.ergast import Ergast
+
+from datetime import datetime
 
 
 class Grapher:
@@ -14,7 +18,7 @@ class Grapher:
         s = round(seconds % 60, 3)
         return str(m) + ":" + str(s)
     
-    def telemetry_graph(self, session, drivers, save=True):
+    def telemetry_graph(self, session, drivers, save=False):
         laps = []
         tels = []
         circuit_info = session.get_circuit_info()
@@ -100,3 +104,146 @@ class Grapher:
         
         if save:
             fig.savefig(session.event['EventName'] + "/" + drivers[0] + "_" + drivers[1] + "_" + session.name + ".png")
+
+
+
+class Races:
+    def __init__(self) -> None:
+        f1.set_log_level("Warning")
+        self.ergast = Ergast()
+        self.race_schedule = self.ergast.get_race_schedule(2023)
+
+        self.all_qual_sessions = []
+        self.all_race_sessions = []
+        self.all_shootout_sessions = []
+        self.all_sprint_sessions = []
+
+        now = datetime.now()
+        for rnd, date in self.race_schedule['raceDate'].items():
+            if now > date:
+                print("Loading", self.race_schedule['raceName'][rnd] + "...")
+                self.all_qual_sessions.append(f1.get_session(2023, rnd + 1, 'Q'))
+                self.all_race_sessions.append(f1.get_session(2023, rnd + 1, 'R'))
+
+                self.all_qual_sessions[-1].load()
+                self.all_race_sessions[-1].load()
+
+                if str(self.race_schedule['sprintDate'][rnd]) != 'NaT':
+                    self.all_shootout_sessions.append(f1.get_session(2023, rnd + 1, 'SS'))
+                    self.all_sprint_sessions.append(f1.get_session(2023, rnd + 1, 'S'))
+
+                    self.all_shootout_sessions[-1].load()
+                    self.all_sprint_sessions[-1].load()
+                else:
+                    self.all_shootout_sessions.append(None)
+                    self.all_sprint_sessions.append(None)
+            else:
+                print("Did not load", self.race_schedule['raceName'][rnd])
+        pass
+
+    def get_all_qual_sessions(self):
+        return self.all_qual_sessions
+    
+    def get_all_race_sessions(self):
+        return self.all_race_sessions
+    
+    def get_all_shootout_sessions(self, none=False):
+        if none:
+            return self.all_shootout_sessions
+        else:
+            return [x for x in self.all_shootout_sessions if x is not None]
+    
+    def get_all_sprint_sessions(self, none=False):
+        if none:
+            return self.all_sprint_sessions
+        else:
+            return [x for x in self.all_sprint_sessions if x is not None]
+        
+    def get_round_sessions(self, rnd=-1):
+        if rnd > len(self.all_race_sessions) - 1 or rnd < -1:
+            print("Round", rnd, "does not exist")
+            return []
+        if self.all_shootout_sessions[rnd] == None:
+            return [self.get_round_qual_session(rnd=rnd), self.get_round_race_session(rnd=rnd)]
+        else:
+            return [self.get_round_qual_session(rnd=rnd), self.get_round_race_session(rnd=rnd), self.get_round_shootout_session(rnd=rnd), self.get_round_sprint_session(rnd=rnd)]
+        
+    def get_round_qual_session(self, rnd=-1):
+        if rnd > len(self.all_qual_sessions) - 1 or rnd < -1:
+            print("Qualification Session", rnd, "does not exist")
+            return None
+        else:
+            return self.all_qual_sessions[rnd]
+        
+    def get_round_race_session(self, rnd=-1):
+        if rnd > len(self.all_race_sessions) - 1 or rnd < -1:
+            print("Race Session", rnd, "does not exist")
+            return None
+        else:
+            return self.all_race_sessions[rnd]
+        
+    def get_round_shootout_session(self, rnd=-1):
+        if rnd > len(self.all_shootout_sessions) - 1 or rnd < -1 or self.all_shootout_sessions[rnd] == None:
+            print("Sprint Shootout Session", rnd, "does not exist")
+            return None
+        else:
+            return self.all_shootout_sessions[rnd]
+        
+    def get_round_sprint_session(self, rnd=-1):
+        if rnd > len(self.all_sprint_sessions) - 1 or rnd < -1 or self.all_sprint_sessions[rnd] == None:
+            print("Sprint Session", rnd, "does not exist")
+            return None
+        else:
+            return self.all_sprint_sessions[rnd]
+
+    def get_round_qual_laps(self, rnd=-1, accurate=False, not_deleted=False):
+        laps = self.get_round_qual_session(rnd=rnd).laps
+
+        if laps == None:
+            return None
+
+        if accurate:
+            laps = laps.pick_accurate()
+        if not_deleted:
+            laps = laps.pick_not_deleted()
+
+        return laps
+
+    def get_round_race_laps(self, rnd=-1, accurate=False, not_deleted=False):
+        laps = self.get_round_race_session(rnd=rnd).laps
+
+        if laps == None:
+            return None
+
+        if accurate:
+            laps = laps.pick_accurate()
+        if not_deleted:
+            laps = laps.pick_not_deleted()
+
+        return laps
+
+    def get_round_shootout_laps(self, rnd=-1, accurate=False, not_deleted=False):
+        laps = self.get_round_shootout_session(rnd=rnd).laps
+
+        if laps == None:
+            return None
+
+        if accurate:
+            laps = laps.pick_accurate()
+        if not_deleted:
+            laps = laps.pick_not_deleted()
+
+        return laps
+
+    def get_round_sprint_laps(self, rnd=-1, accurate=False, not_deleted=False):
+        laps = self.get_round_sprint_session(rnd=rnd).laps
+
+        if laps == None:
+            return None
+
+        if accurate:
+            laps = laps.pick_accurate()
+        if not_deleted:
+            laps = laps.pick_not_deleted()
+
+        return laps
